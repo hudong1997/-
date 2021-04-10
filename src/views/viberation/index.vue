@@ -63,9 +63,10 @@
       <!-- 导入与导出 -->
       <el-row class="quCalculate">
         <el-col :span="24">
-          <el-button type="primary" @click="Export2File">导出</el-button>
+          <!-- <el-button type="primary" @click="Export2File">导出</el-button> -->
           <el-upload :auto-upload="false" :show-file-list="false" action="" :on-change="ImportFromFile">
             <!-- <a class="text-btn">Import</a> -->
+            <el-button type="primary" @click="Export2File">导出</el-button>
              <template>
                   <el-button type="primary" @click="ImportFromFile">导入</el-button>
              </template>
@@ -91,7 +92,7 @@
         <!-- 实例格式[{id: 1, pwl: 122}, {}] -->
         <el-table
           :data="tableData"
-          height= "360"
+          height= "250"
           border
           style="width: 100%">
           <el-table-column
@@ -123,22 +124,54 @@
 </template>
 
 <script>
-import {
-  mxGraph as MxGraph,
-  mxUtils as MxUtils,
-  mxEvent as MxEvent,
-  mxCodec as MxCodec,
-  mxRubberband as MxRubberBand,
-  mxGraphHandler as MxGraphHandler,
-  mxUndoManager as MxUndoManager,
-  mxKeyHandler as MxKeyHandler,
-  mxFastOrganicLayout as MxFastOrganicLayout
-} from 'mxgraph/javascript/mxClient'
+// import {
+//   mxGraph as MxGraph,
+//   mxUtils as MxUtils,
+//   mxEvent as MxEvent,
+//   mxCodec as MxCodec,
+//   mxRubberband as MxRubberBand,
+//   mxGraphHandler as MxGraphHandler,
+//   mxUndoManager as MxUndoManager,
+//   mxKeyHandler as MxKeyHandler,
+//   mxFastOrganicLayout as MxFastOrganicLayout
+// } from 'mxgraph/javascript/mxClient'
+
+import mxgraph from "../../graph/index";
+const {
+  mxGraph,
+  // mxClient,
+  // mxDragSource,
+  // mxCell,
+  // mxRubberband,
+  // mxVertexHandler,
+  // mxConstants,
+  // mxCellState,
+  // mxPerimeter,
+  // mxCellEditor,
+  mxGraphHandler,
+  mxEvent,
+  // mxEdgeHandler,
+  // mxShape,
+  // mxConnectionConstraint,
+  // mxPoint,
+  // mxEventObject,
+  mxCodec,
+  //mxObjectCodec,
+  mxUtils,
+  // mxImageExport,
+  // mxXmlCanvas2D,
+  // mxClipboard,
+  // mxCodecRegistry,
+  mxKeyHandler,
+  mxUndoManager,
+  mxRubberBand
+} = mxgraph;
+
 import { nodeType } from './constants';
-import ChangeStatusDialog from '@/views/example/edgeStyle/changeStatusDialog'
+import ChangeStatusDialog from '@/views/viberation/changeStatusDialog'
 
 export default {
-  name: 'edgeStyle',
+  name: 'viberation',
   components: {ChangeStatusDialog},
   data() {
     return {
@@ -202,7 +235,7 @@ export default {
     },
 
     createGraph() {
-      this.graph = new MxGraph(this.$refs.container)
+      this.graph = new mxGraph(this.$refs.container)
       this.$refs.container.style.background = 'url("./mxgraph/images/grid.gif")'
     },
 
@@ -210,16 +243,16 @@ export default {
       if (this.R.isNil(this.graph)) {
         return
       }
-      this.rubberBand = new MxRubberBand(this.graph)
+      //this.rubberBand = new mxRubberBand(this.graph)
       //撤销与还原的初始化
-      this.undoMng = new MxUndoManager();
+      this.undoMng = new mxUndoManager();
       let listener = (sender, evt) => {
         this.undoMng.undoableEditHappened(evt.getProperty('edit'));
       };
-      this.graph.getModel().addListener(MxEvent.UNDO, listener);
-      this.graph.getView().addListener(MxEvent.UNDO, listener);
+      this.graph.getModel().addListener(mxEvent.UNDO, listener);
+      this.graph.getView().addListener(mxEvent.UNDO, listener);
       
-      this.keyHandler = new MxKeyHandler(this.graph)
+      this.keyHandler = new mxKeyHandler(this.graph)
       this.keyHandler.bindControlKey(90, () => {
         this.undoMng.undo()
       })
@@ -232,12 +265,12 @@ export default {
       this.graph.setCellsEditable(false)
       this.graph.setAllowDanglingEdges(false)
       this.graph.setConnectableEdges(false)
-      MxGraphHandler.prototype.guidesEnabled = true
+      mxGraphHandler.prototype.guidesEnabled = true
       this.graph.convertValueToString = (cell) => {
         return this.R.prop('customerTitle', cell)
       }
       // 监听双击事件
-      this.graph.addListener(MxEvent.DOUBLE_CLICK, (graph, evt) => { 
+      this.graph.addListener(mxEvent.DOUBLE_CLICK, (graph, evt) => { 
         let cell = this.R.pathOr([], ['properties', 'cell'], evt)
         //双击连线
         if(cell && cell.source){
@@ -255,7 +288,7 @@ export default {
       })
 
       //监听单击事件
-      this.graph.addListener(MxEvent.CLICK, (graph, evt) => { 
+      this.graph.addListener(mxEvent.CLICK, (graph, evt) => { 
         let cell = this.R.pathOr([], ['properties', 'cell'], evt)
         //单击连线
         if(cell && cell.source){
@@ -324,7 +357,7 @@ export default {
         }
         return null
       }
-      this.graph.connectionHandler.addListener(MxEvent.CONNECT, (sender, evt) => {
+      this.graph.connectionHandler.addListener(mxEvent.CONNECT, (sender, evt) => {
         const edge = evt.getProperty('cell')
         const source = edge['source']
         const target = edge['target']
@@ -375,7 +408,7 @@ export default {
             return elt
           }
           //构建拖动源，鼠标拖动实现向graph图中添加图形
-          MxUtils.makeDraggable(dom, this.graph, dragHandler, createDragPreview(), 0, 0, false, true)
+          mxUtils.makeDraggable(dom, this.graph, dragHandler, createDragPreview(), 0, 0, false, true)
           //mxUtils.makeDraggable(img, graph, funct);
         })
       })
@@ -485,9 +518,9 @@ export default {
 
     //导出拓扑图到文件中
     Export2File(){
-      const encoder = new MxCodec();
+      const encoder = new mxCodec();
       const curGraph = encoder.encode(this.graph.getModel());
-      const xml = MxUtils.getPrettyXml(curGraph);
+      const xml = mxUtils.getPrettyXml(curGraph);
 
       const downLink = document.createElement('a');
       downLink.style.display = "none"; 
@@ -501,59 +534,17 @@ export default {
     },
     //从文件中导入拓扑图
     ImportFromFile(file){
-      //var layout = new MxFastOrganicLayout(this.graph);
+      // var xml = '<diagram id="" tcn=""><mxGraphModel><root><Workflow value="Diagram" id="0"><mxCell/></Workflow><Layer value="Default Layer" id="1"><mxCell parent="0"/></Layer><mxCell id="2" value="Hello, World!" parent="1" vertex="1"><mxGeometry x="120" y="90" width="80" height="40" as="geometry"/></mxCell></root></mxGraphModel></diagram>';
+      // var doc = mxUtils.parseXml(xml);
+      // var codec = new mxCodec(doc);
       var path = URL.createObjectURL(file.raw)
-      console.log(path);
-      //var req = MxUtils.load(path)
-      //var root = req.getDocumentElement()
-      //var dec = new MxCodec(root.ownerDocument)
+      var req = mxUtils.load(path)
+      var root = req.getDocumentElement()
+      var codec = new mxCodec(root.ownerDocument)
       this.graph.getModel().beginUpdate()
       try {
-        //dec.decode(root, this.graph.getModel());
-        
-        const cells = MxUtils.load(path).getDocumentElement().getElementsByTagName('mxCell');
-        const parent = this.graph.getDefaultParent();
-        for (let i = 2; i < cells.length; i++) {
-          const cellAttrs = cells[i].attributes;
-          if (cellAttrs.vertex) { // is Vertex
-            console.log(cellAttrs.customerName);
-            console.log(typeof(cellAttrs.customerName));
-            console.log('start' === cellAttrs.customerName)
-            var tmp =  new Object();
-            tmp.customerName = 'start';
-            if(tmp === cellAttrs.customerName){
-              const vertexValue = cellAttrs.value ? cellAttrs.value.value : '';
-              // const vertexId = cellAttrs.id.value;
-              const geom = cells[i].children[1].attributes;
-              console.log(cells[i])
-              const xPos = Number(geom.x.value);
-              const yPos = Number(geom.y.value);
-              const height = Number(geom.height.value);
-              const width = Number(geom.width.value);
-              //const style = cellAttrs.style.value;
-              //console.log(style.length);
-              //this.graph.insertVertex(parent, null, vertexValue, xPos, yPos, width, height, style);
-              const vertex = this.graph.insertVertex(parent, null, vertexValue, xPos, yPos, width, height);
-              vertex.customerName = cells[i].customerName;
-              vertex.customerTitle = cells[i].customerTitle;
-            }else if(cellAttrs.customerName === "node"){
-              const vertexValue = cellAttrs.value ? cellAttrs.value.value : '';
-              // const vertexId = cellAttrs.id.value;
-              const geom = cells[i].children[0].attributes;
-              console.log(cells[i])
-              const xPos = Number(geom.x.value);
-              const yPos = Number(geom.y.value);
-              const height = Number(geom.height.value);
-              const width = Number(geom.width.value);
-              //const style = cellAttrs.style.value;
-              //console.log(style.length);
-              //this.graph.insertVertex(parent, null, vertexValue, xPos, yPos, width, height, style);
-              const vertex = this.graph.insertVertex(parent, null, vertexValue, xPos, yPos, width, height);
-              vertex.customerName = cells[i].customerName;
-              vertex.customerTitle = cells[i].customerTitle;
-            }
-          }
-        }
+        codec.decode(root, this.graph.getModel());
+        console.log('----------------')
       } finally {
         this.graph.getModel().endUpdate()
       }
