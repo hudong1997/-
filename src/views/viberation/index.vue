@@ -66,7 +66,7 @@
           <!-- <el-button type="primary" @click="Export2File">导出</el-button> -->
           <el-upload :auto-upload="false" :show-file-list="false" action="" :on-change="ImportFromFile">
             <!-- <a class="text-btn">Import</a> -->
-            <el-button type="primary" @click="Export2File">导出</el-button>
+             <el-button type="primary" @click="Export2File">导出</el-button>
              <template>
                   <el-button type="primary" @click="ImportFromFile">导入</el-button>
              </template>
@@ -332,7 +332,7 @@ export default {
         }
       })
 
-      //
+      //连接是否合法
       this.graph.connectionHandler.validateConnection = (source, target) => {
         const sourceName = source['customerName']
         const targetName = target['customerName']
@@ -357,15 +357,21 @@ export default {
         }
         return null
       }
+
+      //对创建连线之后的连接线进行设置
       this.graph.connectionHandler.addListener(mxEvent.CONNECT, (sender, evt) => {
         const edge = evt.getProperty('cell')
         const source = edge['source']
         const target = edge['target']
-        const status = source['customerStatus'] || 'default'
+        //const status = source['customerStatus'] || 'default'
+        const status = 'success';
+        // console.log('--------->>>'+status);
+        // console.log(source);
         const sourceName = source['customerName']
         const targetName = target['customerName']
 
         this.setEdgeColor(edge, this.status[status])
+        //console.log(this.status+'------------->>'+this.status[status]);
 
         if (sourceName === 'branch') {
           const targetStatus = ('success' === target['customerStatus'] || 'running' === target['customerStatus']) ? 'success' : 'waiting'
@@ -439,8 +445,8 @@ export default {
         const vertex = this.graph.insertVertex(parent, tmpId, null, x, y, 40, 40)
         const changeStatusHandler = this.changeStatusHandler
 
-        vertex.customerOptionalStatus = toolItem['OptionalStatus']
-        vertex.customerName = toolItem['name']
+        vertex.customerOptionalStatus = toolItem['OptionalStatus'];
+        vertex.customerName = toolItem['name'];
         if(toolItem['name'] == "start"){
           vertex.customerTitle = toolItem['name'] + this.StartId;
           ++this.StartId;
@@ -470,12 +476,17 @@ export default {
       const status = cell['customerStatus']
 
       this.R.propOr([], 'edges', cell).forEach((edge) => {
+          console.log('-------------')
+          console.log(this.status[status]);
+          console.log('-------------')
         if (edge['source'] === cell) {
           this.setEdgeColor(edge, this.status[status])
 
           const nextCell = edge['target']
           const nextCellType = nextCell['customerName']
-
+          // console.log('-------------')
+          // console.log(this.status[status]);
+          // console.log('-------------')
           // 下一个节点为普通节点
           if (this.R.equals('Node', nextCellType)) {
             if ('failed' === status) {
@@ -544,9 +555,27 @@ export default {
       this.graph.getModel().beginUpdate()
       try {
         codec.decode(root, this.graph.getModel());
-        console.log('----------------')
       } finally {
         this.graph.getModel().endUpdate()
+      }
+      //更新this.StartId，this.NodeId
+      this.StartId = 1;
+      this.NodeId = 1;
+      var parent = this.Graph.getDefaultParent();
+      var parentChildren = parent.children;
+      for (var i = 0; i < parentChildren.length; i++) {
+        var child = parentChildren[i];
+        if (!child.isVisible()) {
+          continue;
+        }
+        //区分连接线、节点
+        if(child.isVertex()){
+          if(child.customerName == "start"){
+            ++this.StartId;
+          }else{
+            ++this.NodeId;
+          }
+        }
       }
     },
 
