@@ -64,6 +64,3 @@ English | [简体中文](./README-zh_CN.md)
   </tr>
 </table>
 
-## Contact
-* weChat： **lanniu770314**
-* email： **271067929@qq.com**
