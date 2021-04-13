@@ -61,12 +61,18 @@
       </el-row>
 
       <!-- 导入与导出 -->
+      <div class="uplodes">
+
       <el-row class="quCalculate">
-        <el-col :span="24">
-          <!-- <el-button type="primary" @click="Export2File">导出</el-button> -->
+        <el-col :span="9">
+            <el-button type="primary" @click="Export2File">导出</el-button>
+        </el-col>
+        <el-col :span="6"></el-col>
+        <el-col :span="9">
+          
           <el-upload :auto-upload="false" :show-file-list="false" action="" :on-change="ImportFromFile">
             <!-- <a class="text-btn">Import</a> -->
-             <el-button type="primary" @click="Export2File">导出</el-button>
+             <!-- <el-button type="primary" @click="Export2File">导出</el-button> -->
              <template>
                   <el-button type="primary" @click="ImportFromFile">导入</el-button>
              </template>
@@ -77,10 +83,12 @@
 
       <!-- 确认提交计算 -->
       <el-row class="quCalculate">
-        <el-col :span="24">
+        <el-col :span="9">
           <el-button type="primary" @click="calculate">计算</el-button>
         </el-col>
       </el-row>
+      
+      </div>
     </div>
     
     <!-- 绘图区域、计算结果 -->
@@ -152,8 +160,7 @@ const {
   mxEvent,
   // mxEdgeHandler,
   // mxShape,
-  // mxConnectionConstraint,
-  // mxPoint,
+  mxPoint,
   // mxEventObject,
   mxCodec,
   //mxObjectCodec,
@@ -164,7 +171,12 @@ const {
   // mxCodecRegistry,
   mxKeyHandler,
   mxUndoManager,
-  mxRubberBand
+  // mxPoint,
+  mxStyleRegistry,
+  mxConstants,
+  mxEdgeStyle,
+  // mxShape,
+  // mxConnectionConstraint,
 } = mxgraph;
 
 import { nodeType } from './constants';
@@ -230,12 +242,13 @@ export default {
       this.R.forEachObjIndexed((value, key) => {
         styleStr += `${key}=${value};`
       }, style)
-      edge.setStyle(styleStr)
+      edge.setStyle(styleStr);
+
       this.graph.refresh(edge)
     },
 
     createGraph() {
-      this.graph = new mxGraph(this.$refs.container)
+      this.graph = new mxGraph(this.$refs.container);
       this.$refs.container.style.background = 'url("./mxgraph/images/grid.gif")'
     },
 
@@ -259,12 +272,95 @@ export default {
       this.keyHandler.bindControlKey(89, () => {
         this.undoMng.redo()
       })
+
+      //test anchors可连接节点
+      // mxGraph.prototype.getAllConnectionConstraints = function(terminal,source) {
+      //   if (terminal != null && terminal.shape != null) {
+      //       if (terminal.shape.stencil != null) {
+      //           if (terminal.shape.stencil != null) {
+      //               return terminal.shape.stencil.constraints;
+      //           }
+      //       } else if (terminal.shape.constraints != null) {
+      //           return terminal.shape.constraints;
+      //       }
+      //   }
+      //   return null;
+      // };
+      // //设置节点位置、数量、可编辑状态
+      // mxShape.prototype.constraints = [
+      //   //new mxConnectionConstraint(new mxPoint(0.25, 0), true),
+      //   new mxConnectionConstraint(new mxPoint(0.5, 0), true),
+      //   //new mxConnectionConstraint(new mxPoint(0.75, 0), true),
+      //  // new mxConnectionConstraint(new mxPoint(0, 0.25), true),
+      //   new mxConnectionConstraint(new mxPoint(0, 0.5), true),
+      //   // new mxConnectionConstraint(new mxPoint(0, 0.75), true),
+      //   // new mxConnectionConstraint(new mxPoint(1, 0.25), true),
+      //   new mxConnectionConstraint(new mxPoint(1, 0.5), true),
+      //   // new mxConnectionConstraint(new mxPoint(1, 0.75), true),
+      //   // new mxConnectionConstraint(new mxPoint(0.25, 1), true),
+      //   new mxConnectionConstraint(new mxPoint(0.5, 1), true)
+      //   // new mxConnectionConstraint(new mxPoint(0.75, 1), true)
+      // ];
+      //test
+
       //其他初始化操作
       this.graph.setTooltips(true)
       this.graph.setConnectable(true)
       this.graph.setCellsEditable(false)
       this.graph.setAllowDanglingEdges(false)
-      this.graph.setConnectableEdges(false)
+      this.graph.setConnectableEdges(false);
+      //this.graph.setEnabled(false);
+      this.graph.setCellsResizable(false);//节点不可改变大小 
+
+      //连线90度拐弯
+      this.style = this.graph.getStylesheet().getDefaultEdgeStyle();
+      this.style[mxConstants.STYLE_EDGE] = mxEdgeStyle.ElbowConnector;
+      mxEdgeStyle.MyStyle = function(state, source, target, points, result)
+      {
+        if (source != null && target != null)
+        {
+          if(Math.abs(source.getCenterX()-target.getCenterX()) <= 
+            Math.abs(target.x-target.getCenterX())){
+            return;
+          }
+
+          if(Math.abs(source.getCenterY()-target.getCenterY()) <= 
+            Math.abs(target.y-target.getCenterY())){
+            return;
+          }
+
+          if(points){
+            var pt = new mxPoint(source.getCenterX(),target.getCenterY());
+            // if(points[0].x === source.getCenterX()){
+            //   //console.log(result)
+            //   console.log('------->>'+points[0].x);
+            //   console.log('------->>>'+source.getCenterX());
+            //   pt = new mxPoint(target.getCenterX(), source.getCenterY());
+            // }else{
+            //   console.log('-------'+points[0].x);
+            //   console.log('-------'+source.getCenterX());
+            //   pt = new mxPoint(source.getCenterX(),target.getCenterY());
+            // }
+            if (mxUtils.contains(source, pt.x, pt.y))
+            {
+              pt.x = source.x + source.width;
+            }
+            result.push(pt);
+            return;
+          }
+
+          pt = new mxPoint(target.getCenterX(), source.getCenterY());
+          if (mxUtils.contains(source, pt.x, pt.y))
+          {
+            pt.y = source.y + source.height;           
+          }
+          result.push(pt);
+        }
+      };
+      mxStyleRegistry.putValue('myEdgeStyle', mxEdgeStyle.MyStyle);
+      this.style[mxConstants.STYLE_EDGE] = mxEdgeStyle.MyStyle;
+
+
       mxGraphHandler.prototype.guidesEnabled = true
       this.graph.convertValueToString = (cell) => {
         return this.R.prop('customerTitle', cell)
@@ -360,34 +456,37 @@ export default {
 
       //对创建连线之后的连接线进行设置
       this.graph.connectionHandler.addListener(mxEvent.CONNECT, (sender, evt) => {
-        const edge = evt.getProperty('cell')
-        const source = edge['source']
-        const target = edge['target']
+        // const edge = evt.getProperty('cell')
+        // const source = edge['source']
+        // const target = edge['target']
         //const status = source['customerStatus'] || 'default'
-        const status = 'success';
-        // console.log('--------->>>'+status);
-        // console.log(source);
-        const sourceName = source['customerName']
-        const targetName = target['customerName']
+        // const status = 'success';
+        // // console.log('--------->>>'+status);
+        // // console.log(source);
+        // const sourceName = source['customerName']
+        // const targetName = target['customerName']
 
-        this.setEdgeColor(edge, this.status[status])
+        //this.setEdgeColor(edge, this.status[status]);
+
+        // this.style = this.graph.getStylesheet().getDefaultEdgeStyle();
+        // this.style[mxConstants.STYLE_EDGE] = mxEdgeStyle.ElbowConnector;
         //console.log(this.status+'------------->>'+this.status[status]);
 
-        if (sourceName === 'branch') {
-          const targetStatus = ('success' === target['customerStatus'] || 'running' === target['customerStatus']) ? 'success' : 'waiting'
+        // if (sourceName === 'branch') {
+        //   const targetStatus = ('success' === target['customerStatus'] || 'running' === target['customerStatus']) ? 'success' : 'waiting'
 
-          this.setEdgeColor(edge, this.status[targetStatus])
-        }
-        if (targetName === 'Aggregation') {
-          const edges = this.R.filter(this.R.propEq('target', target), this.R.propOr([], 'edges', target))
-          const nodeStatus = this.R.map(this.R.path(['source', 'customerStatus']), edges)
+        //   this.setEdgeColor(edge, this.status[targetStatus])
+        // }
+        // if (targetName === 'Aggregation') {
+        //   const edges = this.R.filter(this.R.propEq('target', target), this.R.propOr([], 'edges', target))
+        //   const nodeStatus = this.R.map(this.R.path(['source', 'customerStatus']), edges)
 
-          if (this.R.includes('waiting', nodeStatus) || this.R.includes('failed', nodeStatus)) {
-            target['customerStatus'] = 'waiting'
-          } else {
-            target['customerStatus'] = 'success'
-          }
-        }
+        //   if (this.R.includes('waiting', nodeStatus) || this.R.includes('failed', nodeStatus)) {
+        //     target['customerStatus'] = 'waiting'
+        //   } else {
+        //     target['customerStatus'] = 'success'
+        //   }
+        // }
       })
       this.Graph = this.graph;
     },
@@ -427,24 +526,23 @@ export default {
       try {
         const statusMap = this.statusMap;
         var tmpId = toolItem['name'] + this.NodeId
-        let img1 = '';
+        //let img1 = '';
         if(toolItem['name'] == "start"){
           tmpId = toolItem['name'] + this.StartId
-          img1 = 'image=./pipe/起点.png;';
+          //img1 = 'image=./pipe/起点.png;';
         }else{
-          if(toolItem['title'] == "节流阀"){
-            img1 = 'image=./pipe/节流阀.png;';
-          }else{
-            img1 = 'image=./pipe/三通.png;';
-          }
+          // if(toolItem['title'] == "节流阀"){
+          //   img1 = 'image=./pipe/节流阀.png;';
+          // }else{
+          //   img1 = 'image=./pipe/三通.png;';
+          // }
         }
-        const disabledStyle='shape=image;\
-          verticalLabelPosition=bottom;\
-          verticalAlign=top;';
+        // const disabledStyle='shape=image;\
+        //   verticalLabelPosition=bottom;\
+        //   verticalAlign=top;';
         //const vertex = this.graph.insertVertex(parent, tmpId, null, x, y, 60, 60,disabledStyle+img1)
         const vertex = this.graph.insertVertex(parent, tmpId, null, x, y, 40, 40)
         const changeStatusHandler = this.changeStatusHandler
-
         vertex.customerOptionalStatus = toolItem['OptionalStatus'];
         vertex.customerName = toolItem['name'];
         if(toolItem['name'] == "start"){
@@ -744,10 +842,16 @@ export default {
           }
         }
         .paramters{
-            margin: 5px 0;
-            height: 350px;
+            margin: 4px 0;
+            height: 300px;
             background: #fff;
             padding-left: 10px;
+        }
+        .uplodes{
+            // margin: 5px 0;
+            background: #fff;
+            padding-left: 4px;
+            padding: 1px;
         }
     }
   // .legendContainer {
